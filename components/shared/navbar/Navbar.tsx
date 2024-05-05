@@ -14,10 +14,10 @@ const Navbar = () => {
           src="/assets/images/site-logo.svg"
           width={23}
           height={23}
-          alt="DevFlow"
+          alt="QueueOverFlow"
         />
         <p className="h2-bold font-spaceGrotesk text-dark-100 max-sm:hidden dark:text-light-900">
-          Dev<span className="text-primary-500">Overflow</span>
+          Queue<span className="text-primary-500">Overflow</span>
         </p>
       </Link>
       <GlobalSearch />

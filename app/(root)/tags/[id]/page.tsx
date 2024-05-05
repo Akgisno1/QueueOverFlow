@@ -19,8 +19,8 @@ export async function generateMetadata({
     pageSize: 1,
   });
   return {
-    title: `Questions with Tag '${result.tagTitle}' | Dev Overflow`,
-    description: `View questions with tag '${result.tagTitle}' on Dev Overflow - A community-driven platform for asking and answering programming questions. Get help, share knowledge and collaborate with developers from around the world. Explore topics in web developments, mobile app development, algorithms, data structures and more...`,
+    title: `Questions with Tag '${result.tagTitle}' | QueueOverflow`,
+    description: `View questions with tag '${result.tagTitle}' on QueueOverflow - A community-driven platform for asking and answering programming questions. Get help, share knowledge and collaborate with developers from around the world. Explore topics in web developments, mobile app development, algorithms, data structures and more...`,
   };
 }
 

@@ -29,7 +29,8 @@ const NavContent = () => {
                 isActive
                   ? "primary-gradient rounded-lg text-light-900"
                   : "text-dark300_light900"
-              } flex items-center justify-start gap-4 bg-transparent p-4`}>
+              } flex items-center justify-start gap-4 bg-transparent p-4`}
+            >
               <Image
                 src={item.imgURL}
                 alt={item.label}
@@ -62,16 +63,17 @@ const MobileNav = () => {
       </SheetTrigger>
       <SheetContent
         side="left"
-        className="background-light900_dark200 border-none">
+        className="background-light900_dark200 border-none"
+      >
         <Link href="/" className="flex items-center gap-1">
           <Image
             src="/assets/images/site-logo.svg"
             width={23}
             height={23}
-            alt="DevFlow"
+            alt="QueueOverFlow"
           />
           <p className="h2-bold text-dark100_light900 font-spaceGrotesk">
-            Dev<span className="text-primary-500">Overflow</span>
+            Queue<span className="text-primary-500">Overflow</span>
           </p>
         </Link>
         <div className="flex flex-col">

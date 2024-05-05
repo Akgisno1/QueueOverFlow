@@ -14,9 +14,9 @@ import {
 } from "@/constants";
 
 export const metadata: Metadata = {
-  title: "Community | Dev Overflow",
+  title: "Community | QueueOverflow",
   description:
-    "View the users' community on Dev Overflow - A community-driven platform for asking and answering programming questions. Get help, share knowledge and collaborate with developers from around the world. Explore topics in web developments, mobile app development, algorithms, data structures and more...",
+    "View the users' community on QueueOverflow - A community-driven platform for asking and answering programming questions. Get help, share knowledge and collaborate with developers from around the world. Explore topics in web developments, mobile app development, algorithms, data structures and more...",
 };
 
 const Community = async ({ searchParams }: SearchParamsProps) => {

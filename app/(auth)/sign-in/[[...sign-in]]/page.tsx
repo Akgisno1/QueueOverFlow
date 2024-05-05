@@ -2,7 +2,7 @@ import { SignIn } from "@clerk/nextjs";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Login | Dev Overflow",
+  title: "Login | QueueOverflow",
 };
 
 export default function Page() {
