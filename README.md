@@ -1,25 +1,29 @@
-Dev Overflow - StackOverflow Clone
+QueueOverflow
 ==================================
-Welcome to Dev Overflow - a comprehensive StackOverflow-like platform created as part of the "Ultimate Next.js 14 Course" by JS Mastery. This app is built with Next.js, utilizing cutting-edge web development techniques to provide a feature-rich experience.  
+QueueOverflow is a modern platform for asking and answering questions, inspired by Stack Overflow. It includes a variety of features such as code snippet support, user reputation systems, and a recommendation engine. The project uses Next.js for both the frontend and backend, along with various other technologies and tools.
+ 
 
 ## Features:
-### Cutting-edge Web Development:
+
 * **Next.js Mastery**: Mastered the Next.js framework, exploring routing, authentication, and real-time events.
 * **UI/UX Optimization**: Extensive focus on user interface and user experience for seamless navigation.
 * **Form Handling**: Efficient form handling using react-hook-form and zod for validation.
 * **Open AI Integration**: Leveraged Open AI for generating automated answers.
 * **SEO Optimization**: Implemented SEO best practices for better visibility.
-
-## Advanced Functionality:
 * **Recommendation System**: Unique system for recommending posts.
 * **Global Database Data Fetching**: Effortlessly retrieve global database information.
 * **AI-Generated Answers**: Innovative feature providing AI-generated answers to questions.
 * **Badge & Reputation System**: Recognition system for user contributions.
 * **Views and Voting Mechanism**: Engaging user interaction features.
 * **Filter and Pagination**: Enhanced search capabilities for a seamless experience.
+* **Data Sync:** Webhooks for syncing user data between MongoDB and Clerk.
+- **Full Pagination:** Navigate through questions, answers, and other sections with pagination.
+- **Community Interaction:** Explore other users in the community and their reputation.
+- **Search and Filter:** Advanced search and filtering options with top posts and tags.
+- **User Profiles:** View and edit user profiles, including photo customization.
 
-## Contents:
-This repository contains the source code and related files for the Dev Overflow app. The app is deployed and accessible at [Dev Overflow](https://utkarsh-dev-overflow.vercel.app/).
+
+
 
 ## Technologies Used:
 * **NMongoDB**: Document database for storing and managing app data.
@@ -37,4 +41,4 @@ This repository contains the source code and related files for the Dev Overflow 
 * **Shadcn UI**: UI library for creating interactive components and animations.
 * **TypeScript**: Statically typed superset of JavaScript for enhanced code quality.
 
-Explore the source code and delve into the world of modern web development with Dev Overflow!
+
