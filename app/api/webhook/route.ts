@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       clerkId: id,
       name: `${first_name}${last_name ? ` ${last_name}` : ""}`,
       username: username!,
-      email: email_addresses[0].email_address,
+      email: email_addresses[0].email_address || "no email",
       picture: image_url,
     });
     return NextResponse.json({ message: "OK", user: mongoUser });
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
       updateData: {
         name: `${first_name}${last_name ? ` ${last_name}` : ""}`,
         username: username!,
-        email: email_addresses[0].email_address,
+        email: email_addresses[0].email_address || undefined,
         picture: image_url,
       },
       path: `/profile/${id}`,
