@@ -137,7 +137,20 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">;
 
+const logErrorToast = ({ title, description, variant }: Toast) => {
+  if (variant !== "destructive") return;
+
+  const message = [title, description]
+    .filter(Boolean)
+    .map((part) => String(part))
+    .join(" — ");
+
+  console.error("[Toast Error]", message || "An error occurred");
+};
+
 function toast({ ...props }: Toast) {
+  logErrorToast(props);
+
   const id = genId();
 
   const update = (props: ToasterToast) =>

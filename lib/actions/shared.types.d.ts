@@ -157,3 +157,27 @@ export interface GetUserStatsParams {
 export interface DeleteUserParams {
   clerkId: string;
 }
+
+export interface CreateResumeSessionParams {
+  clerkId: string;
+  resumeText: string;
+}
+
+export interface GetActiveResumeSessionParams {
+  clerkId: string;
+}
+
+export interface SendJobChatMessageParams {
+  clerkId: string;
+  message: string;
+}
+
+export interface GetSessionMessagesParams {
+  clerkId: string;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface ResetActiveSessionParams {
+  clerkId: string;
+}

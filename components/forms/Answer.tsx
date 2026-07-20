@@ -73,15 +73,17 @@ const Answer = ({ question, questionId, authorId }: Props) => {
     if (!authorId) return;
     setSetIsSubmittingAI(true);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_SERVER_URL}/api/chatgpt`,
-        {
-          method: "POST",
-          body: JSON.stringify({ question }),
-        }
-      );
+      const response = await fetch("/api/chatgpt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
       const aiAnswer = await response.json();
-      // Convert plain text to HTML format
+
+      if (!response.ok || aiAnswer.error) {
+        throw new Error(aiAnswer.error || "Failed to generate AI answer");
+      }
+
       const formattedAnswer = aiAnswer.reply.replace(/\n/g, "<br />");
       if (editorRef.current) {
         const editor = editorRef.current as any;
@@ -91,10 +93,10 @@ const Answer = ({ question, questionId, authorId }: Props) => {
         title: "Generated AI answer",
         variant: "default",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
-        title: "Failed to generate AI answer",
+        title: error.message || "Failed to generate AI answer",
         variant: "destructive",
       });
     } finally {
