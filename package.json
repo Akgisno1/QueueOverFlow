@@ -38,6 +38,8 @@
     "react": "^18",
     "react-dom": "^18",
     "react-hook-form": "^7.49.2",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "svix": "^1.15.0",
     "tailwind-merge": "^2.1.0",
     "zod": "^3.22.4"

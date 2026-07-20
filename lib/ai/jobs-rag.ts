@@ -158,7 +158,14 @@ ${webBlock}
 USER QUESTION:
 ${userPrompt}
 
-Answer clearly and practically. If listing jobs, include title + URL.`;
+Format your answer in clean Markdown:
+- Use ### for section headings
+- Use bullet lists for steps and recommendations
+- Use **bold** for key terms
+- Use [descriptive text](url) for links — never paste raw URLs alone
+- Keep paragraphs short and scannable like ChatGPT
+
+Answer clearly and practically. If listing jobs, include title + clickable link.`;
 
   return generateChatCompletion(prompt);
 };

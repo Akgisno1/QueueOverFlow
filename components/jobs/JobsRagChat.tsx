@@ -7,6 +7,7 @@ import JobsRagMessageList, { ChatMessage } from "./JobsRagMessageList";
 import JobsRagComposer from "./JobsRagComposer";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
+import { parseApiResponse } from "@/lib/parse-api-response";
 
 const JobsRagChat = () => {
   const [session, setSession] = useState<any>(null);
@@ -28,17 +29,25 @@ const JobsRagChat = () => {
       if (opts?.cursor) params.set("cursor", opts.cursor);
 
       const res = await fetch(`/api/jobs/messages?${params.toString()}`);
-      const json = await res.json();
+      const json = await parseApiResponse<{
+        ok: boolean;
+        error?: string;
+        data: {
+          messages: ChatMessage[];
+          nextCursor: string | null;
+          hasMore: boolean;
+        };
+      }>(res);
+
       if (!json.ok) throw new Error(json.error || "Failed to load messages");
 
-      const incoming: ChatMessage[] = json.data.messages;
       setCursor(json.data.nextCursor);
       setHasMore(json.data.hasMore);
 
       if (opts?.prepend) {
-        setMessages((prev) => [...incoming, ...prev]);
+        setMessages((prev) => [...json.data.messages, ...prev]);
       } else {
-        setMessages(incoming);
+        setMessages(json.data.messages);
       }
     },
     []
@@ -48,7 +57,11 @@ const JobsRagChat = () => {
     setIsBootstrapping(true);
     try {
       const sessionRes = await fetch("/api/jobs/session");
-      const sessionJson = await sessionRes.json();
+      const sessionJson = await parseApiResponse<{
+        ok: boolean;
+        error?: string;
+        data: { session: any };
+      }>(sessionRes);
 
       if (!sessionJson.ok) throw new Error(sessionJson.error);
 
@@ -77,11 +90,15 @@ const JobsRagChat = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resumeText: resumeInput }),
       });
-      const json = await res.json();
+      const json = await parseApiResponse<{ ok: boolean; error?: string }>(res);
       if (!json.ok) throw new Error(json.error);
 
       const sessionRes = await fetch("/api/jobs/session");
-      const sessionJson = await sessionRes.json();
+      const sessionJson = await parseApiResponse<{
+        ok: boolean;
+        data: { session: any };
+      }>(sessionRes);
+
       setSession(sessionJson.data.session);
       setMessages([]);
       setCursor(null);
@@ -106,6 +123,7 @@ const JobsRagChat = () => {
       id: `temp-${Date.now()}`,
       role: "user",
       content,
+      createdAt: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, tempUserMessage]);
 
@@ -115,12 +133,20 @@ const JobsRagChat = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: content }),
       });
-      const json = await res.json();
+
+      const json = await parseApiResponse<{
+        ok: boolean;
+        error?: string;
+        data: { message: ChatMessage };
+      }>(res);
+
       if (!json.ok) throw new Error(json.error);
 
       setMessages((prev) => [...prev, json.data.message]);
     } catch (error: any) {
-      setMessages((prev) => prev.filter((msg) => msg.id !== tempUserMessage.id));
+      setMessages((prev) =>
+        prev.filter((msg) => msg.id !== tempUserMessage.id)
+      );
       toast({ title: error.message, variant: "destructive" });
     } finally {
       setIsSending(false);
@@ -142,7 +168,7 @@ const JobsRagChat = () => {
   const resetChat = async () => {
     try {
       const res = await fetch("/api/jobs/session", { method: "DELETE" });
-      const json = await res.json();
+      const json = await parseApiResponse<{ ok: boolean; error?: string }>(res);
       if (!json.ok) throw new Error(json.error);
 
       setSession(null);
@@ -186,8 +212,8 @@ const JobsRagChat = () => {
   }
 
   return (
-    <section className="flex h-[calc(100vh-10rem)] flex-col overflow-hidden rounded-xl border light-border background-light900_dark200 shadow-light100_darknone">
-      <header className="flex items-center justify-between border-b light-border px-4 py-3">
+    <section className="background-light900_dark200 light-border shadow-light100_darknone flex h-[calc(100vh-10rem)] flex-col overflow-hidden rounded-xl border">
+      <header className="light-border flex items-center justify-between border-b px-4 py-3">
         <div>
           <h1 className="h3-semibold text-dark100_light900">Jobs AI Coach</h1>
           <p className="small-regular text-dark500_light700">

@@ -1,29 +1,36 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const DEFAULT_CHAT_MODELS = [
-  "gemini-3.5-flash",
-  "gemini-3.1-flash-lite",
-  "gemini-2.5-flash",
+  "gemini-2.0-flash-lite",
   "gemini-2.0-flash",
+  "gemini-1.5-flash-8b",
+  "gemini-1.5-flash",
 ];
 
 const DEFAULT_EMBEDDING_MODELS = [
-  "gemini-embedding-2",
   "text-embedding-004",
   "gemini-embedding-001",
 ];
 
 export const EMBEDDING_DIMENSIONS = 768;
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const getApiKey = () => {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    console.error(
-      "❌ [Gemini Env Error] Missing GEMINI_API_KEY in environment variables."
-    );
-    throw new Error("Missing GEMINI_API_KEY");
-  }
+  if (!apiKey) throw new Error("Missing GEMINI_API_KEY");
   return apiKey;
+};
+
+const isQuotaError = (message: string) =>
+  /429|quota|rate.?limit|too many requests|exceeded your current quota/i.test(
+    message
+  );
+
+const getRetryDelayMs = (message: string): number => {
+  const match = message.match(/retry in ([0-9.]+)s/i);
+  if (match) return Math.ceil(parseFloat(match[1]) * 1000) + 500;
+  return 3000;
 };
 
 export const normalizeEmbedding = (vector: number[]): number[] => {
@@ -40,53 +47,33 @@ const embedWithRest = async (
   text: string
 ): Promise<number[]> => {
   const apiKey = getApiKey();
-  let lastRestError = "Unknown REST error";
-
   const body: Record<string, unknown> = {
-    content: {
-      parts: [{ text }],
-    },
+    content: { parts: [{ text }] },
   };
 
-  if (
-    [
-      "gemini-embedding-2",
-      "text-embedding-004",
-      "gemini-embedding-001",
-    ].includes(model)
-  ) {
+  if (model === "gemini-embedding-001") {
     body.outputDimensionality = EMBEDDING_DIMENSIONS;
   }
 
   for (const version of ["v1", "v1beta"] as const) {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/${version}/models/${model}:embedContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        lastRestError = data?.error?.message || `HTTP ${response.status}`;
-        console.error(
-          `⚠️ [Gemini REST Embedding Error] Model: ${model}, Version: ${version}. Message: ${lastRestError}`
-        );
-        continue;
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/${version}/models/${model}:embedContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       }
+    );
 
-      if (data?.embedding?.values?.length) {
-        return normalizeEmbedding(data.embedding.values as number[]);
-      }
-    } catch (fetchError: any) {
-      lastRestError = fetchError?.message || lastRestError;
-      console.error(
-        `🚨 [Gemini REST Embedding Exception] Model: ${model}, Version: ${version}. Exception:`,
-        fetchError
+    const data = await response.json();
+    if (response.ok && data?.embedding?.values?.length) {
+      return normalizeEmbedding(data.embedding.values as number[]);
+    }
+
+    const errorMessage = data?.error?.message || `HTTP ${response.status}`;
+    if (isQuotaError(errorMessage)) {
+      throw new Error(
+        "Gemini embedding rate limit reached. Please wait 30 seconds and try again."
       );
     }
   }
@@ -95,24 +82,16 @@ const embedWithRest = async (
 };
 
 const embedWithSdk = async (model: string, text: string): Promise<number[]> => {
-  try {
-    const genAI = new GoogleGenerativeAI(getApiKey());
-    const embeddingModel = genAI.getGenerativeModel({ model });
-    const result = await embeddingModel.embedContent(text);
-    const values = result.embedding?.values;
+  const genAI = new GoogleGenerativeAI(getApiKey());
+  const embeddingModel = genAI.getGenerativeModel({ model });
+  const result = await embeddingModel.embedContent(text);
+  const values = result.embedding?.values;
 
-    if (!values?.length) {
-      throw new Error(`Embedding model "${model}" returned empty vector`);
-    }
-
-    return normalizeEmbedding(values);
-  } catch (sdkError: any) {
-    console.error(
-      `⚠️ [Gemini SDK Embedding Error] Model: ${model}. Message:`,
-      sdkError?.message || sdkError
-    );
-    throw sdkError;
+  if (!values?.length) {
+    throw new Error(`Embedding model "${model}" returned empty vector`);
   }
+
+  return normalizeEmbedding(values);
 };
 
 export const generateEmbedding = async (text: string): Promise<number[]> => {
@@ -128,6 +107,16 @@ export const generateEmbedding = async (text: string): Promise<number[]> => {
       return await embedWithSdk(model, text);
     } catch (sdkError: any) {
       lastError = sdkError?.message || lastError;
+
+      if (isQuotaError(lastError)) {
+        await sleep(getRetryDelayMs(lastError));
+        try {
+          return await embedWithSdk(model, text);
+        } catch {
+          continue;
+        }
+      }
+
       try {
         return await embedWithRest(model, text);
       } catch (restError: any) {
@@ -137,52 +126,20 @@ export const generateEmbedding = async (text: string): Promise<number[]> => {
   }
 
   throw new Error(
-    `Gemini embedding failed. ${lastError}. Verify GEMINI_API_KEY and enabled models in Google AI Studio.`
+    `Gemini embedding failed. ${lastError}. Check GEMINI_API_KEY in Google AI Studio.`
   );
 };
 
-const generateWithRest = async (
+const generateWithSdk = async (
   model: string,
   prompt: string
 ): Promise<string> => {
-  const apiKey = getApiKey();
-  let lastRestError = "Unknown REST error";
-
-  for (const version of ["v1", "v1beta"] as const) {
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        lastRestError = data?.error?.message || `HTTP ${response.status}`;
-        console.error(
-          `⚠️ [Gemini REST Chat Error] Model: ${model}, Version: ${version}. Message: ${lastRestError}`
-        );
-        continue;
-      }
-
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (text) return text;
-    } catch (fetchError: any) {
-      lastRestError = fetchError?.message || lastRestError;
-      console.error(
-        `🚨 [Gemini REST Chat Exception] Model: ${model}, Version: ${version}. Exception:`,
-        fetchError
-      );
-    }
-  }
-
-  throw new Error(`REST fallback failed: ${lastRestError}`);
+  const genAI = new GoogleGenerativeAI(getApiKey());
+  const chatModel = genAI.getGenerativeModel({ model });
+  const result = await chatModel.generateContent(prompt);
+  const text = result.response.text();
+  if (!text) throw new Error(`Chat model "${model}" returned empty response`);
+  return text;
 };
 
 export const generateChatCompletion = async (
@@ -193,42 +150,36 @@ export const generateChatCompletion = async (
     ? [configured, ...DEFAULT_CHAT_MODELS.filter((m) => m !== configured)]
     : DEFAULT_CHAT_MODELS;
 
-  const detailedErrors: string[] = [];
+  let lastError = "Unknown chat error";
+  let sawQuotaError = false;
 
   for (const model of models) {
     try {
-      const genAI = new GoogleGenerativeAI(getApiKey());
-      const chatModel = genAI.getGenerativeModel({ model });
-      const result = await chatModel.generateContent(prompt);
-      const text = result.response.text();
-      if (text) return text;
+      return await generateWithSdk(model, prompt);
     } catch (sdkError: any) {
-      const sdkMsg = `[SDK - ${model}]: ${sdkError?.message}`;
-      detailedErrors.push(sdkMsg);
-      console.error(
-        `⚠️ [Gemini SDK Chat Error] Attempting model ${model} failed. Error:`,
-        sdkError?.message || sdkError
-      );
+      lastError = sdkError?.message || lastError;
+      console.error(`[Gemini] Model ${model} failed:`, lastError);
 
-      try {
-        return await generateWithRest(model, prompt);
-      } catch (restError: any) {
-        const restMsg = `[REST - ${model}]: ${restError?.message}`;
-        detailedErrors.push(restMsg);
-        console.error(
-          `🚨 [Gemini REST Fallback Error] Model ${model} failed REST fallback. Error:`,
-          restError?.message || restError
-        );
+      if (isQuotaError(lastError)) {
+        sawQuotaError = true;
+        await sleep(getRetryDelayMs(lastError));
+        try {
+          return await generateWithSdk(model, prompt);
+        } catch (retryError: any) {
+          lastError = retryError?.message || lastError;
+          continue;
+        }
       }
     }
   }
 
-  const finalError = `Gemini chat failed.\n\nDebug Log:\n${detailedErrors.join(
-    "\n"
-  )}\n\nPlease check your configuration.`;
-  console.error(
-    `❌ [Gemini Critical Failure] All configured models failed to generate content.\n`,
-    finalError
+  if (sawQuotaError) {
+    throw new Error(
+      "Gemini rate limit reached on free tier. Wait 30–60 seconds, then try again with a shorter message."
+    );
+  }
+
+  throw new Error(
+    `Gemini chat failed. ${lastError}. Set GEMINI_CHAT_MODEL=gemini-2.0-flash-lite in .env.local.`
   );
-  throw new Error(finalError);
 };

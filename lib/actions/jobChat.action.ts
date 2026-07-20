@@ -206,7 +206,7 @@ export async function sendJobChatMessage({
 
   const assistantText = await chatWithGemini({
     systemPrompt:
-      "You are QueueOverFlow Jobs AI Coach. Help users improve resumes and find jobs. Be specific and actionable.",
+      "You are QueueOverFlow Jobs AI Coach. Help users improve resumes and find jobs. Be specific, actionable, and format every reply in polished Markdown.",
     contextChunks: matchedChunks.map((c) => c.text),
     chatHistory,
     userPrompt: trimmed,

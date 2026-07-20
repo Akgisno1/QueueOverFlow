@@ -2,6 +2,7 @@
 
 import { ArrowUp, Sparkles } from "lucide-react";
 import React from "react";
+
 const PROMPT_SUGGESTIONS = [
   "Find mistakes in my resume",
   "Suggest improvements",
